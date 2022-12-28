@@ -3,16 +3,18 @@ package io.security.basicsecurity.config;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.LogoutConfigurer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
 import java.io.IOException;
 
@@ -49,7 +51,25 @@ public class WebSecurityConfig {
                         })
                         .permitAll()
                 )
-                .logout(LogoutConfigurer::permitAll);
+                .logout((logout) -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login")
+                        .addLogoutHandler(new LogoutHandler() {
+                            @Override
+                            public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+                                HttpSession session = request.getSession();
+                                session.invalidate();
+                            }
+                        })
+                        .logoutSuccessHandler(new LogoutSuccessHandler() {
+                            @Override
+                            public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+                                response.sendRedirect("/login");
+                            }
+                        })
+                        .deleteCookies("remember-me")
+                        .permitAll()
+                );
 
         return http.build();
     }
